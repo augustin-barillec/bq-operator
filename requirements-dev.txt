@@ -1,0 +1,12 @@
+-r requirements.txt
+
+pyarrow==2.*
+
+twine==3.*
+
+coverage==5.*
+codecov==2.*
+
+jupyter==1.*
+
+sphinx==3.*

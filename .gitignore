@@ -1,0 +1,14 @@
+/.idea/
+
+/build/
+/dist/
+/google_pandas_load.egg-info/
+
+/coverage/
+.coverage
+coverage.xml
+
+/docs/build/
+/docs/source/.ipynb_checkpoints/
+
+/venv/
