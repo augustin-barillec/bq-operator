@@ -1,5 +1,5 @@
 from google.cloud import bigquery
-from reusable.bq_operator.operator import Operator
+from bq_operator.operator import Operator
 
 
 class OperatorQuickSetup(Operator):
@@ -18,6 +18,7 @@ class OperatorQuickSetup(Operator):
 
     @property
     def project_id(self):
+        """str: The project_id given in the argument."""
         return self._project_id
 
     @property

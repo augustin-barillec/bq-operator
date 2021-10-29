@@ -14,23 +14,30 @@ class Operator:
 
     @property
     def bq_client(self):
+        """google.cloud.bigquery.client.Client: The bq_client given in the
+        argument.
+        """
         return self._bq_client
 
     @property
     def dataset_id(self):
+        """str: The dataset_id given in the argument."""
         return self._dataset_id
 
     @staticmethod
-    def log(msg):
+    def _log(msg):
         logger.debug(msg)
 
     def instantiate_dataset(self):
+        """Instantiate the dataset."""
         return bigquery.Dataset(self._dataset_id)
 
     def get_dataset(self):
+        """Get the dataset."""
         return self._bq_client.get_dataset(self._dataset_id)
 
     def dataset_exists(self):
+        """Return True if the dataset exists."""
         try:
             self.get_dataset()
             return True
@@ -38,67 +45,82 @@ class Operator:
             return False
 
     def create_dataset(self, location=None):
+        """Create the dataset."""
         dataset = self.instantiate_dataset()
         dataset.location = location
-        self.log(f'Trying to create dataset {self._dataset_id}')
+        self._log(f'Trying to create dataset {self._dataset_id}')
         if self.dataset_exists():
             location = self.get_dataset().location
             msg = f'Dataset {self._dataset_id} ' \
                   f'already exists in location {location}'
-            self.log(msg)
+            self._log(msg)
             return
         self._bq_client.create_dataset(dataset)
         location = self.get_dataset().location
-        self.log(f'Created dataset {self._dataset_id} in location {location}')
+        self._log(f'Created dataset {self._dataset_id} in location {location}')
 
     def delete_dataset(self):
-        self.log(f'Trying to delete dataset {self._dataset_id}')
+        """Delete the dataset."""
+        self._log(f'Trying to delete dataset {self._dataset_id}')
         if self.dataset_exists():
             self._bq_client.delete_dataset(self._dataset_id)
-            self.log(f'Deleted dataset {self._dataset_id}')
+            self._log(f'Deleted dataset {self._dataset_id}')
         else:
-            self.log(f'Dataset {self._dataset_id} not found')
+            self._log(f'Dataset {self._dataset_id} not found')
 
     def build_table_id(self, table_name):
+        """Returns the table_id of the table_name."""
         return f'{self._dataset_id}.{table_name}'
 
     def instantiate_table(self, table_name):
+        """Instantiate the table."""
         table_id = self.build_table_id(table_name)
         return bigquery.Table(table_id)
 
     def get_table(self, table_name):
+        """Get the table."""
         table_id = self.build_table_id(table_name)
         return self._bq_client.get_table(table_id)
 
     def table_exists(self, table_name):
+        """Return True if the table exists."""
         try:
             self.get_table(table_name)
-            self.log(f'exists: {table_name}')
+            self._log(f'exists: {table_name}')
             return True
         except NotFound:
-            self.log(f'not found: {table_name}')
+            self._log(f'not found: {table_name}')
             return False
 
-    def get_attribute(self, table_name, attribute_name):
+    def _get_attribute(self, table_name, attribute_name):
         table = self.get_table(table_name)
         return getattr(table, attribute_name)
 
     def get_schema(self, table_name):
-        return self.get_attribute(table_name, 'schema')
+        """Return the schema of the table."""
+        return self._get_attribute(table_name, 'schema')
 
     def get_time_partitioning(self, table_name):
-        return self.get_attribute(table_name, 'time_partitioning')
+        """Return the time_partioning attribute of the table."""
+        return self._get_attribute(table_name, 'time_partitioning')
 
     def get_range_partitioning(self, table_name):
-        return self.get_attribute(table_name, 'range_partitioning')
+        """Return the range_partitioning attribute of the table."""
+        return self._get_attribute(table_name, 'range_partitioning')
 
     def get_require_partition_filter(self, table_name):
-        return self.get_attribute(table_name, 'require_partition_filter')
+        """Return the require_partition_filter attribute of the table."""
+        return self._get_attribute(table_name, 'require_partition_filter')
 
     def get_clustering_fields(self, table_name):
-        return self.get_attribute(table_name, 'clustering_fields')
+        """Return the clustering_fields attribute of the table."""
+        return self._get_attribute(table_name, 'clustering_fields')
 
     def get_format_attributes(self, table_name):
+        """Return the following attributes of the table:
+        schema, time_partitioning, range_partitioning,
+        require_partition_filter, clustering_fields.
+        """
         n = table_name
         return {
             'schema': self.get_schema(n),
@@ -108,46 +130,59 @@ class Operator:
             'clustering_fields': self.get_clustering_fields(n)}
 
     def get_col_names(self, table_name):
+        """Return the column names of the table."""
         schema = self.get_schema(table_name)
         return [f.name for f in schema]
 
     def get_num_rows(self, table_name):
+        """Return the table's number of rows"""
         table = self.get_table(table_name)
         return table.num_rows
 
     def is_empty(self, table_name):
+        """Return True if the table is empty."""
         num_rows = self.get_num_rows(table_name)
         return num_rows == 0
 
     def set_expiration_time(self, table_name, nb_days):
+        """Set the expiration time of the table."""
         table = self.get_table(table_name)
-        expiration_time = (datetime.now(timezone.utc) + timedelta(days=nb_days))
+        expiration_time = (
+                datetime.now(timezone.utc) + timedelta(days=nb_days))
         table.expires = expiration_time
         self._bq_client.update_table(table, ['expires'])
 
     def list_tables(self):
+        """List the table names which are in the dataset."""
         tables = list(self._bq_client.list_tables(self._dataset_id))
         table_names = [t.table_id for t in tables]
         for table_name in table_names:
-            self.log(f'listed: {table_name}')
+            self._log(f'listed: {table_name}')
         return table_names
 
     def delete_table(self, table_name):
+        """Delete the table."""
         table_id = self.build_table_id(table_name)
         if self.table_exists(table_name):
             self._bq_client.delete_table(table_id)
-            self.log(f'deleted: {table_name}')
+            self._log(f'deleted: {table_name}')
 
     def delete_tables(self, table_names):
+        """Delete the tables."""
         for table_name in table_names:
             self.delete_table(table_name)
 
     def clean_dataset(self):
-        self.log(f'Cleaning dataset {self._dataset_id}...')
+        """Delete all the tables from the dataset."""
+        self._log(f'Cleaning dataset {self._dataset_id}...')
         self.delete_tables(self.list_tables())
-        self.log(f'Cleaned dataset {self._dataset_id}')
+        self._log(f'Cleaned dataset {self._dataset_id}')
 
     def tables_same_format(self, left, right):
+        """Return True if the two tables have the same following attributes:
+        schema, time_partitioning, range_partitioning,
+        require_partition_filter, clustering_fields.
+         """
         res = True
         left_format_attributes = self.get_format_attributes(left)
         right_format_attributes = self.get_format_attributes(right)
@@ -159,20 +194,23 @@ class Operator:
                 msg = f'{k}: SAME'
             else:
                 msg = f'{k}: DIFFERENT'
-            self.log(msg)
+            self._log(msg)
             res = min(res, is_equal)
         return res
 
     def delete_if_mismatch(self, reference, to_compare):
+        """Delete the table to_compare
+        if :meth:`bq_operator.operator.tables_same_format` returns False when
+        applied to the tables reference and to_compare."""
         c1 = self.table_exists(table_name=reference)
         c2 = self.table_exists(table_name=to_compare)
         if not c1 or not c2:
             return
         c3 = self.tables_same_format(reference, to_compare)
         if c3:
-            self.log('matching => doing nothing')
+            self._log('matching => doing nothing')
         else:
-            self.log(f'mismatching => deleting {to_compare}')
+            self._log(f'mismatching => deleting {to_compare}')
             self.delete_table(
                 table_name=to_compare)
 
@@ -184,6 +222,7 @@ class Operator:
             range_partitioning=None,
             require_partition_filter=None,
             clustering_fields=None):
+        """Create an empty table."""
         self.delete_table(table_name)
         table = self.instantiate_table(table_name)
         table.schema = schema
@@ -228,7 +267,7 @@ class Operator:
         return jobs
 
     @staticmethod
-    def wait_for_jobs(jobs):
+    def _wait_for_jobs(jobs):
         for job in jobs:
             job.result()
 
@@ -237,15 +276,17 @@ class Operator:
             source_table_names,
             destination_table_names,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE):
+        """Copy tables."""
         jobs = self._launch_copy_jobs(
             source_table_names, destination_table_names, write_disposition)
-        self.wait_for_jobs(jobs)
+        self._wait_for_jobs(jobs)
 
     def copy_table(
             self,
             source_table_name,
             destination_table_name,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE):
+        """Copy a table."""
         self.copy_tables(
             [source_table_name], [destination_table_name], write_disposition)
 
@@ -256,14 +297,15 @@ class Operator:
         return x
 
     def run_sql_statements(self, sql_statements, job_configs=None):
+        """Run sql statements."""
         start_timestamp = datetime.now(timezone.utc)
         nb_sql_statements = len(sql_statements)
         plural = ''
         if nb_sql_statements > 1:
             plural = 's'
-        self.log(f'Running sql statement{plural}...')
+        self._log(f'Running sql statement{plural}...')
         jobs = self._launch_sql_statement_jobs(sql_statements, job_configs)
-        self.wait_for_jobs(jobs)
+        self._wait_for_jobs(jobs)
         end_timestamp = datetime.now(timezone.utc)
         duration = (end_timestamp - start_timestamp).seconds
         total_bytes_billed_list = [
@@ -275,15 +317,17 @@ class Operator:
         monitoring = {'duration': duration, 'cost': cost}
         if nb_sql_statements > 1:
             monitoring['costs'] = costs
-        self.log(
+        self._log(
             f'Ran sql statement{plural} [{duration}s, {cost}$]')
         return monitoring
 
     def run_sql_statement(self, sql_statement, job_config=None):
+        """Run a sql statement."""
         return self.run_sql_statements([sql_statement], [job_config])
 
     @staticmethod
     def sample_query(query, size=100000):
+        """Sample randomly a query."""
         return f"""
         select * from ({query}) 
         where rand() < {size}/(select count(*) from ({query}))
@@ -294,6 +338,7 @@ class Operator:
             queries,
             destination_table_names,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE):
+        """Run queries."""
         job_configs = []
         for d in destination_table_names:
             d_id = self.build_table_id(d)
@@ -308,15 +353,18 @@ class Operator:
             query,
             destination_table_name,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE):
+        """Run a query."""
         return self.run_queries(
             [query], [destination_table_name], write_disposition)
 
     def create_view(self, query, destination_table_name):
+        """Create a view."""
         self.delete_table(destination_table_name)
         view = self.instantiate_table(destination_table_name)
         view.view_query = query
         self._bq_client.create_table(view)
 
     def create_views(self, queries, destination_table_names):
+        """Create views."""
         for q, d in zip(queries, destination_table_names):
             self.create_view(q, d)
