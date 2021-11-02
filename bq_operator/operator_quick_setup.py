@@ -23,4 +23,5 @@ class OperatorQuickSetup(Operator):
 
     @property
     def dataset_name(self):
+        """str: The dataset_name given in the argument."""
         return self._dataset_name

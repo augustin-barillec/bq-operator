@@ -69,16 +69,16 @@ class Operator:
             self._log(f'Dataset {self._dataset_id} not found')
 
     def build_table_id(self, table_name):
-        """Returns the table_id of the table_name."""
+        """Return the table's id."""
         return f'{self._dataset_id}.{table_name}'
 
     def instantiate_table(self, table_name):
-        """Instantiate the table."""
+        """Instantiate a table."""
         table_id = self.build_table_id(table_name)
         return bigquery.Table(table_id)
 
     def get_table(self, table_name):
-        """Get the table."""
+        """Get a table."""
         table_id = self.build_table_id(table_name)
         return self._bq_client.get_table(table_id)
 
@@ -97,27 +97,27 @@ class Operator:
         return getattr(table, attribute_name)
 
     def get_schema(self, table_name):
-        """Return the schema of the table."""
+        """Return the table's schema."""
         return self._get_attribute(table_name, 'schema')
 
     def get_time_partitioning(self, table_name):
-        """Return the time_partioning attribute of the table."""
+        """Return the table's time_partioning."""
         return self._get_attribute(table_name, 'time_partitioning')
 
     def get_range_partitioning(self, table_name):
-        """Return the range_partitioning attribute of the table."""
+        """Return the table's range_partitioning."""
         return self._get_attribute(table_name, 'range_partitioning')
 
     def get_require_partition_filter(self, table_name):
-        """Return the require_partition_filter attribute of the table."""
+        """Return the table's require_partition_filter."""
         return self._get_attribute(table_name, 'require_partition_filter')
 
     def get_clustering_fields(self, table_name):
-        """Return the clustering_fields attribute of the table."""
+        """Return the table's clustering_fields."""
         return self._get_attribute(table_name, 'clustering_fields')
 
     def get_format_attributes(self, table_name):
-        """Return the following attributes of the table:
+        """Return the following table's attributes:
         schema, time_partitioning, range_partitioning,
         require_partition_filter, clustering_fields.
         """
@@ -130,12 +130,12 @@ class Operator:
             'clustering_fields': self.get_clustering_fields(n)}
 
     def get_col_names(self, table_name):
-        """Return the column names of the table."""
+        """Return the table's column names of the table."""
         schema = self.get_schema(table_name)
         return [f.name for f in schema]
 
     def get_num_rows(self, table_name):
-        """Return the table's number of rows"""
+        """Return the table's number of rows."""
         table = self.get_table(table_name)
         return table.num_rows
 
@@ -144,8 +144,8 @@ class Operator:
         num_rows = self.get_num_rows(table_name)
         return num_rows == 0
 
-    def set_expiration_time(self, table_name, nb_days):
-        """Set the expiration time of the table."""
+    def set_time_to_live(self, table_name, nb_days):
+        """Set the table's expiration time."""
         table = self.get_table(table_name)
         expiration_time = (
                 datetime.now(timezone.utc) + timedelta(days=nb_days))
@@ -181,7 +181,7 @@ class Operator:
     def tables_same_format(self, left, right):
         """Return True if the two tables have the same following attributes:
         schema, time_partitioning, range_partitioning,
-        require_partition_filter, clustering_fields.
+        require_partition_filter and clustering_fields.
          """
         res = True
         left_format_attributes = self.get_format_attributes(left)
@@ -199,9 +199,9 @@ class Operator:
         return res
 
     def delete_if_mismatch(self, reference, to_compare):
-        """Delete the table to_compare
-        if :meth:`bq_operator.operator.tables_same_format` returns False when
-        applied to the tables reference and to_compare."""
+        """Delete the table to_compare if
+        :meth:`bq_operator.operator.Operator.tables_same_format`
+        returns False when applied to the tables reference and to_compare."""
         c1 = self.table_exists(table_name=reference)
         c2 = self.table_exists(table_name=to_compare)
         if not c1 or not c2:
