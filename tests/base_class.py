@@ -1,4 +1,5 @@
 import unittest
+from google.cloud import bigquery
 from tests.context.resources import bq_client, dataset_id
 
 
@@ -7,7 +8,9 @@ def delete_dataset():
 
 
 def create_dataset():
-    bq_client.create_dataset(dataset_id, exists_ok=False)
+    dataset = bigquery.Dataset(dataset_id)
+    dataset.location = 'EU'
+    bq_client.create_dataset(dataset, exists_ok=False)
 
 
 class BaseClassTest(unittest.TestCase):

@@ -1,7 +1,7 @@
 import unittest
 import coverage
 
-cov = coverage.coverage(include='google_pandas_load/*')
+cov = coverage.coverage(include='bq_operator/*')
 cov.start()
 suite = unittest.TestLoader().discover(start_dir='tests')
 unittest.TextTestRunner(verbosity=2).run(suite)

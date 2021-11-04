@@ -44,18 +44,12 @@ class Operator:
         except NotFound:
             return False
 
-    def create_dataset(self, location=None):
+    def create_dataset(self, location=None, exists_ok=False):
         """Create the dataset."""
         dataset = self.instantiate_dataset()
         dataset.location = location
-        self._log(f'Trying to create dataset {self._dataset_id}')
-        if self.dataset_exists():
-            location = self.get_dataset().location
-            msg = f'Dataset {self._dataset_id} ' \
-                  f'already exists in location {location}'
-            self._log(msg)
-            return
-        self._bq_client.create_dataset(dataset)
+        self._log(f'Creating dataset {self._dataset_id}')
+        self._bq_client.create_dataset(dataset=dataset, exists_ok=exists_ok)
         location = self.get_dataset().location
         self._log(f'Created dataset {self._dataset_id} in location {location}')
 

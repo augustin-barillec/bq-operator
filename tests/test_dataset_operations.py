@@ -1,15 +1,20 @@
-import unittest
-from tests.context.resources import project_id, \
-    dataset_name, dataset_id, bucket_name, local_dir_path
+from google.cloud import bigquery
+from tests.context.resources import bq_client, dataset_id
+from tests.context.operators import operator
+from tests.base_class import BaseClassTest
 
 
-class DatasetOperations(unittest.TestCase):
+class DatasetOperations(BaseClassTest):
 
-    def instantiate_dataset(self):
-        pass
+    def test_instantiate_dataset(self):
+        expected = bigquery.Dataset(dataset_id)
+        computed = operator.instantiate_dataset()
+        self.assertEqual(
+            expected.project,
+            computed.project)
+        self.assertEqual(
+            expected.dataset_id,
+            computed.dataset_id)
 
     def test_get_dataset(self):
-        pass
-
-    def test_dataset_exists(self):
 
