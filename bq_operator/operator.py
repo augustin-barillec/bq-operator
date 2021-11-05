@@ -51,7 +51,7 @@ class Operator:
         self._log(f'Creating dataset {self._dataset_id}')
         self._bq_client.create_dataset(dataset=dataset, exists_ok=exists_ok)
         location = self.get_dataset().location
-        self._log(f'Created dataset {self._dataset_id} in location {location}')
+        self._log(f'Dataset {self._dataset_id} exists in location {location}')
 
     def delete_dataset(self):
         """Delete the dataset."""
