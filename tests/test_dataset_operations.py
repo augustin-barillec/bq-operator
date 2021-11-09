@@ -6,15 +6,16 @@ from tests.base_class import BaseClassTest
 
 class DatasetOperations(BaseClassTest):
 
-    def test_instantiate_dataset(self):
-        expected = bigquery.Dataset(dataset_id)
-        computed = operator.instantiate_dataset()
-        self.assertEqual(
-            expected.project,
-            computed.project)
-        self.assertEqual(
-            expected.dataset_id,
-            computed.dataset_id)
-
     def test_get_dataset(self):
+        expected = bq_client.get_dataset(dataset_id)
+        computed = operator.get_dataset()
+        self.assertEqual(
+            expected.full_dataset_id,
+            computed.full_dataset_id)
+
+    def test_dataset_exists(self):
+        self.assertTrue(operator.dataset_exists())
+        bq_client.delete_dataset(dataset_id, not_found_ok=False)
+        self.assertFalse(operator.dataset_exists())
+        bq_client.create_dataset(dataset_id, exists_ok=False)
 

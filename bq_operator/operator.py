@@ -28,8 +28,7 @@ class Operator:
     def _log(msg):
         logger.debug(msg)
 
-    def instantiate_dataset(self):
-        """Instantiate the dataset."""
+    def _instantiate_dataset(self):
         return bigquery.Dataset(self._dataset_id)
 
     def get_dataset(self):
@@ -44,30 +43,26 @@ class Operator:
         except NotFound:
             return False
 
-    def create_dataset(self, location=None, exists_ok=False):
+    def create_dataset(self, location=None):
         """Create the dataset."""
-        dataset = self.instantiate_dataset()
+        dataset = self._instantiate_dataset()
         dataset.location = location
-        self._log(f'Creating dataset {self._dataset_id}')
-        self._bq_client.create_dataset(dataset=dataset, exists_ok=exists_ok)
+        self._log(f'Creating dataset {self._dataset_id}...')
+        self._bq_client.create_dataset(dataset=dataset, exists_ok=False)
         location = self.get_dataset().location
-        self._log(f'Dataset {self._dataset_id} exists in location {location}')
+        self._log(f'Created dataset {self._dataset_id} in location {location}')
 
     def delete_dataset(self):
         """Delete the dataset."""
-        self._log(f'Trying to delete dataset {self._dataset_id}')
-        if self.dataset_exists():
-            self._bq_client.delete_dataset(self._dataset_id)
-            self._log(f'Deleted dataset {self._dataset_id}')
-        else:
-            self._log(f'Dataset {self._dataset_id} not found')
+        self._log(f'Deleting dataset {self._dataset_id}...')
+        self._bq_client.delete_dataset(self._dataset_id, not_found_ok=True)
+        self._log(f'Deleted {self._dataset_id} if it existed')
 
     def build_table_id(self, table_name):
         """Return the table's id."""
         return f'{self._dataset_id}.{table_name}'
 
-    def instantiate_table(self, table_name):
-        """Instantiate a table."""
+    def _instantiate_table(self, table_name):
         table_id = self.build_table_id(table_name)
         return bigquery.Table(table_id)
 
@@ -139,7 +134,7 @@ class Operator:
         return num_rows == 0
 
     def set_time_to_live(self, table_name, nb_days):
-        """Set the table's expiration time."""
+        """Set the table's time to live."""
         table = self.get_table(table_name)
         expiration_time = (
                 datetime.now(timezone.utc) + timedelta(days=nb_days))
@@ -157,9 +152,8 @@ class Operator:
     def delete_table(self, table_name):
         """Delete the table."""
         table_id = self.build_table_id(table_name)
-        if self.table_exists(table_name):
-            self._bq_client.delete_table(table_id)
-            self._log(f'deleted: {table_name}')
+        self._bq_client.delete_table(table_id, not_found_ok=True)
+        self._log(f'deleted {table_name} if it existed')
 
     def delete_tables(self, table_names):
         """Delete the tables."""
@@ -218,7 +212,7 @@ class Operator:
             clustering_fields=None):
         """Create an empty table."""
         self.delete_table(table_name)
-        table = self.instantiate_table(table_name)
+        table = self._instantiate_table(table_name)
         table.schema = schema
         table.time_partitioning = time_partitioning
         table.range_partitioning = range_partitioning
@@ -354,7 +348,7 @@ class Operator:
     def create_view(self, query, destination_table_name):
         """Create a view."""
         self.delete_table(destination_table_name)
-        view = self.instantiate_table(destination_table_name)
+        view = self._instantiate_table(destination_table_name)
         view.view_query = query
         self._bq_client.create_table(view)
 
