@@ -1,6 +1,6 @@
 import unittest
-from tests.test_dataset_operations import DatasetOperations
+from tests.test_table_operations import TableOperations
 
 suite = unittest.TestSuite()
-suite.addTest(DatasetOperations('test_dataset_exists'))
+suite.addTest(TableOperations('test_build_table_id'))
 unittest.TextTestRunner(verbosity=2).run(suite)
