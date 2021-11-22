@@ -7,7 +7,7 @@ from tests.base_class import BaseClassTest
 class DatasetOperations(BaseClassTest):
 
     def test_get_dataset(self):
-        expected = f'{project_id}.{dataset_id}'
+        expected = dataset_id
         computed = operator.get_dataset().full_dataset_id
         self.assertEqual(expected, computed)
 
@@ -19,8 +19,10 @@ class DatasetOperations(BaseClassTest):
 
     def test_create_dataset(self):
         bq_client.delete_dataset(dataset_id, not_found_ok=False)
-        operator.create_dataset(location='southamerica-east1')
-        self.assertEqual('southamerica-east1', operator.get_dataset().location)
+        location = 'southamerica-east1'
+        operator.create_dataset(location=location)
+        self.assertTrue(utils.dataset_exists())
+        self.assertEqual(location, utils.get_dataset().location)
 
     def test_delete_dataset(self):
         self.assertTrue(utils.dataset_exists())

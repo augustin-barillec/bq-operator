@@ -16,7 +16,7 @@ def populate(table_names=table_names_default):
         job_config = bigquery.QueryJobConfig()
         job_config.destination = table_id
         job = bq_client.query(
-            query=f"select 'data_{n}' as x",
+            query=f"select 'data_{n}' as data_{n}",
             job_config=job_config)
         jobs.append(job)
     wait_for_jobs(jobs)
