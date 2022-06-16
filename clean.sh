@@ -1,29 +1,25 @@
 #!/bin/bash
 
+function clean_jupyter(){
+  rm -r .ipynb_checkpoints
+}
+
 function clean_docs(){
-  rm -rf docs/build
+  rm -r docs/build
 }
 
 function clean_coverage(){
-  rm -rf coverage
-  rm -f .coverage coverage.xml
+  rm -r coverage
+  rm .coverage coverage.xml
 }
 
 function clean_packaging(){
-  rm -rf build dist google_pandas_load.egg-info
+  rm -r build dist google_pandas_load.egg-info
 }
 
-function clean_venv(){
-  rm -rf venv
-}
-
-function clean_daily(){
+function clean(){
+  clean_jupyter
   clean_docs
   clean_coverage
   clean_packaging
-}
-
-function clean_all(){
-  clean_daily
-  clean_venv
 }
