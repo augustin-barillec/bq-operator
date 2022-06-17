@@ -57,17 +57,20 @@ class Operator:
         except NotFound:
             return False
 
-    def create_dataset(self, location=None):
+    def create_dataset(self, location):
         """Create the dataset."""
         dataset = self._instantiate_dataset()
         dataset.location = location
-        self._client.create_dataset(dataset=dataset, exists_ok=False)
+        self._client.create_dataset(dataset, exists_ok=False)
         location = self.get_dataset().location
         return location
 
     def delete_dataset(self):
         """Delete the dataset."""
-        self._client.delete_dataset(self._dataset_id, not_found_ok=True)
+        self._client.delete_dataset(
+            self._dataset_id,
+            delete_contents=False,
+            not_found_ok=True)
 
     def build_table_id(self, table_name, dataset_id=None):
         """Return the table id."""
@@ -93,7 +96,7 @@ class Operator:
             return False
 
     def get_format_attributes(self, table_name):
-        """Return the following table's attributes:
+        """Return the following table attributes:
         schema, time_partitioning, range_partitioning,
         require_partition_filter, clustering_fields.
         """
@@ -104,7 +107,7 @@ class Operator:
             res[a] = getattr(self.get_table(n), a)
         return res
 
-    def get_col_names(self, table_name):
+    def get_columns(self, table_name):
         """Return the column names of a table."""
         schema = self.get_table(table_name).schema
         return [f.name for f in schema]
