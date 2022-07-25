@@ -42,7 +42,8 @@ class Operator:
         return (f'select * from ({query}) '
                 f'where rand() < {size}/(select count(*) from ({query}))')
 
-    def _instantiate_dataset(self):
+    def instantiate_dataset(self):
+        """Instantiate the dataset."""
         return bigquery.Dataset(self._dataset_id)
 
     def get_dataset(self):
@@ -57,11 +58,16 @@ class Operator:
         except NotFound:
             return False
 
-    def create_dataset(self, location):
-        """Create the dataset."""
-        dataset = self._instantiate_dataset()
+    def create_dataset(self, location=None, default_time_to_live=None):
+        dataset = self.instantiate_dataset()
         dataset.location = location
-        self._client.create_dataset(dataset, exists_ok=False)
+        if default_time_to_live is not None:
+            default_table_expiration_ms = \
+                default_time_to_live * 24 * 60 * 60 * 1000
+        else:
+            default_table_expiration_ms = None
+        dataset.default_table_expiration_ms = default_table_expiration_ms
+        self._client.create_dataset(dataset=dataset, exists_ok=False)
         location = self.get_dataset().location
         return location
 
@@ -78,7 +84,8 @@ class Operator:
             dataset_id = self._dataset_id
         return f'{dataset_id}.{table_name}'
 
-    def _instantiate_table(self, table_name):
+    def instantiate_table(self, table_name):
+        """Instantiate a table."""
         table_id = self.build_table_id(table_name)
         return bigquery.Table(table_id)
 
@@ -193,7 +200,7 @@ class Operator:
             require_partition_filter=None,
             clustering_fields=None):
         """Create an empty table."""
-        table = self._instantiate_table(table_name)
+        table = self.instantiate_table(table_name)
         table.schema = schema
         table.time_partitioning = time_partitioning
         table.range_partitioning = range_partitioning
@@ -204,7 +211,7 @@ class Operator:
     def create_view(self, query, destination_table_name):
         """Create a view."""
         self.delete_table(destination_table_name)
-        view = self._instantiate_table(destination_table_name)
+        view = self.instantiate_table(destination_table_name)
         view.view_query = query
         self._client.create_table(view)
 
@@ -233,11 +240,13 @@ class Operator:
             self,
             source_table_name,
             destination_uri,
-            field_delimiter):
+            field_delimiter,
+            print_header):
         assert destination_uri.endswith('.csv.gz')
         source = self.build_table_id(source_table_name)
         job_config = bigquery.ExtractJobConfig()
         job_config.field_delimiter = field_delimiter
+        job_config.print_header = print_header
         job_config.destination_format = 'CSV'
         job_config.compression = 'GZIP'
         job = self._client.extract_table(
@@ -302,12 +311,13 @@ class Operator:
             self,
             source_table_names,
             destination_uris,
-            field_delimiter):
+            field_delimiter,
+            print_header):
         len_source_table_names = len(source_table_names)
         len_destination_uris = len(destination_uris)
         assert len_source_table_names >= 1
         assert len_source_table_names == len_destination_uris
-        return [self._extract_job(s, d, field_delimiter)
+        return [self._extract_job(s, d, field_delimiter, print_header)
                 for s, d in zip(source_table_names, destination_uris)]
 
     def _load_jobs(
@@ -365,10 +375,14 @@ class Operator:
             self,
             source_table_names,
             destination_uris,
-            field_delimiter='|'):
+            field_delimiter='|',
+            print_header=True):
         """Extract tables."""
         self._wait_for_jobs(self._extract_jobs(
-            source_table_names, destination_uris, field_delimiter))
+            source_table_names,
+            destination_uris,
+            field_delimiter,
+            print_header))
 
     def load_tables(
             self,
@@ -410,10 +424,12 @@ class Operator:
             self,
             source_table_name,
             destination_uri,
-            field_delimiter='|'):
+            field_delimiter='|',
+            print_header=True):
         """Extract a table."""
         self.extract_tables(
-            [source_table_name], [destination_uri], field_delimiter)
+            [source_table_name], [destination_uri],
+            field_delimiter, print_header)
 
     def load_table(
             self,
