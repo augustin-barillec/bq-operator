@@ -200,20 +200,21 @@ class Operator:
             require_partition_filter=None,
             clustering_fields=None):
         """Create an empty table."""
+        self.delete_table(table_name)
         table = self.instantiate_table(table_name)
         table.schema = schema
         table.time_partitioning = time_partitioning
         table.range_partitioning = range_partitioning
         table.require_partition_filter = require_partition_filter
         table.clustering_fields = clustering_fields
-        self._client.create_table(table, exists_ok=True)
+        self._client.create_table(table, exists_ok=False)
 
     def create_view(self, query, destination_table_name):
         """Create a view."""
         self.delete_table(destination_table_name)
         view = self.instantiate_table(destination_table_name)
         view.view_query = query
-        self._client.create_table(view)
+        self._client.create_table(view, exists_ok=False)
 
     def create_views(self, queries, destination_table_names):
         """Create views."""
